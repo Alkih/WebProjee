@@ -1,0 +1,164 @@
+@{
+    ViewData["Title"] = "Steam Game Card";
+}
+
+<style>
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f7f7f7;
+    color: #222;
+    margin: 0;
+    padding: 0;
+    transition: background 0.2s, color 0.2s;
+}
+.header {
+    background: #4a90e2;
+    color: #fff;
+    padding: 2rem 1rem 1rem 1rem;
+    text-align: center;
+    border-radius: 0 0 16px 16px;
+    transition: background 0.2s, color 0.2s;
+}
+.instructions {
+    text-align: center;
+    margin: 1rem 0 2rem 0;
+    color: #555;
+    transition: color 0.2s;
+}
+.theme-btn {
+    background: #357abd;
+    color: #fff;
+    border: none;
+    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s;
+}
+.theme-btn:hover, .theme-btn:active {
+    background: #4a90e2;
+    color: #fff;
+}
+.steam-input-container {
+    text-align: center;
+    margin: 2rem 0;
+}
+.steam-card {
+    display: inline-block;
+    background: #22242c;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    padding: 1rem;
+    color: #fff;
+    margin-top: 1.5rem;
+}
+.steam-card img {
+    width: 320px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.steam-card .game-title {
+    margin-top: 0.7rem;
+    font-size: 1.2rem;
+}
+.steam-card .game-price {
+    margin-top: 0.5rem;
+    font-size: 1.1rem;
+    color: #ffd700;
+}
+body.dark-mode {
+    background: #181a20;
+    color: #eaeaea;
+}
+body.dark-mode .header {
+    background: #22242c;
+    color: #eaeaea;
+}
+body.dark-mode .instructions {
+    color: #b0b0b0;
+}
+body.dark-mode .steam-card {
+    background: #181a20;
+    color: #eaeaea;
+}
+body.dark-mode .theme-btn {
+    background: #4a90e2;
+    color: #fff;
+}
+body.dark-mode .theme-btn:hover, body.dark-mode .theme-btn:active {
+    background: #357abd;
+    color: #fff;
+}
+</style>
+
+<div class="header">
+    <h1>Steam Game Card</h1>
+</div>
+<div class="instructions">
+    Paste a Steam game URL below and see its card and price.
+</div>
+
+<div class="steam-input-container">
+    <input id="steamUrlInput" type="text" placeholder="Paste a Steam game URL..." style="width:320px; padding:0.6rem; border-radius:8px; border:1px solid #ccc; font-size:1rem;">
+    <button id="steamFetchBtn" class="theme-btn" style="margin-left:0.5rem;">Show Game Card</button>
+    <div id="steamGameCard"></div>
+</div>
+
+<button id="themeToggle" class="theme-btn" aria-label="Toggle dark mode" style="position:fixed;bottom:1rem;right:1rem;">🌙 Dark Mode</button>
+
+<script>
+document.getElementById('steamFetchBtn').addEventListener('click', function() {
+    const url = document.getElementById('steamUrlInput').value.trim();
+    const cardDiv = document.getElementById('steamGameCard');
+    cardDiv.innerHTML = '';
+    const match = url.match(/store\.steampowered\.com\/app\/(\d+)/);
+    if (!match) {
+        cardDiv.innerHTML = '<span style="color:red;">Please enter a valid Steam game URL.</span>';
+        return;
+    }
+    const appId = match[1];
+    fetch(`/Home/GetSteamGameInfo?appId=${appId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data[appId].success) {
+                cardDiv.innerHTML = '<span style="color:red;">Game not found.</span>';
+                return;
+            }
+            const info = data[appId].data;
+            let price = "Not available";
+            if (info.price_overview) {
+                price = info.price_overview.final_formatted;
+            }
+            cardDiv.innerHTML = `
+                <div class="steam-card">
+                    <img src="${info.header_image}" alt="${info.name}">
+                    <div class="game-title">${info.name}</div>
+                    <div class="game-price">Price: ${price}</div>
+                </div>
+            `;
+        })
+        .catch(() => {
+            cardDiv.innerHTML = '<span style="color:red;">Could not fetch game info.</span>';
+        });
+});
+
+// Theme toggle logic
+const themeToggle = document.getElementById('themeToggle');
+function setTheme(dark) {
+    if (dark) {
+        document.body.classList.add('dark-mode');
+        themeToggle.textContent = '☀️ Light Mode';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.body.classList.remove('dark-mode');
+        themeToggle.textContent = '🌙 Dark Mode';
+        localStorage.setItem('theme', 'light');
+    }
+}
+themeToggle.addEventListener('click', () => {
+    setTheme(!document.body.classList.contains('dark-mode'));
+});
+setTheme(localStorage.getItem('theme') === 'dark');
+</script>

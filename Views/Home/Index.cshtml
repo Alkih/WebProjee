@@ -1,0 +1,83 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<style>
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f7f7f7;
+    color: #222;
+    margin: 0;
+    padding: 0;
+    transition: background 0.2s, color 0.2s;
+}
+.header {
+    background: #4a90e2;
+    color: #fff;
+    padding: 2rem 1rem 1rem 1rem;
+    text-align: center;
+    border-radius: 0 0 16px 16px;
+    transition: background 0.2s, color 0.2s;
+}
+.theme-btn {
+    background: #357abd;
+    color: #fff;
+    border: none;
+    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s;
+}
+.theme-btn:hover, .theme-btn:active {
+    background: #4a90e2;
+    color: #fff;
+}
+body.dark-mode {
+    background: #181a20;
+    color: #eaeaea;
+}
+body.dark-mode .header {
+    background: #22242c;
+    color: #eaeaea;
+}
+body.dark-mode .theme-btn {
+    background: #4a90e2;
+    color: #fff;
+}
+body.dark-mode .theme-btn:hover, body.dark-mode .theme-btn:active {
+    background: #357abd;
+    color: #fff;
+}
+</style>
+
+<div class="header">
+    <h1>Welcome!</h1>
+</div>
+<div style="text-align:center; margin-top:3rem;">
+    <a href="/Home/WebsiteStatusMonitor" class="theme-btn" style="margin:1rem;">Website Status Monitor</a>
+    <a href="/Home/Steam" class="theme-btn" style="margin:1rem;">Steam Game Card</a>
+</div>
+
+<button id="themeToggle" class="theme-btn" aria-label="Toggle dark mode" style="position:fixed;bottom:1rem;right:1rem;">🌙 Dark Mode</button>
+
+<script>
+const themeToggle = document.getElementById('themeToggle');
+function setTheme(dark) {
+    if (dark) {
+        document.body.classList.add('dark-mode');
+        themeToggle.textContent = '☀️ Light Mode';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.body.classList.remove('dark-mode');
+        themeToggle.textContent = '🌙 Dark Mode';
+        localStorage.setItem('theme', 'light');
+    }
+}
+themeToggle.addEventListener('click', () => {
+    setTheme(!document.body.classList.contains('dark-mode'));
+});
+setTheme(localStorage.getItem('theme') === 'dark');
+</script>

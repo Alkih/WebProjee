@@ -1,0 +1,261 @@
+@{
+    ViewData["Title"] = "Website Status Monitor";
+}
+
+<style>
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f7f7f7;
+    margin: 0;
+    padding: 0;
+}
+.header {
+    background: #4a90e2;
+    color: #fff;
+    padding: 2rem 1rem 1rem 1rem;
+    text-align: center;
+    border-radius: 0 0 16px 16px;
+}
+.instructions {
+    text-align: center;
+    margin: 1rem 0 2rem 0;
+    color: #555;
+}
+#pageList {
+    list-style: none;
+    padding: 0;
+    margin: 0 auto 120px auto;
+    max-width: 400px;
+}
+.site-card {
+    background: #fff;
+    margin: 1rem 0;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.1rem;
+    transition: box-shadow 0.2s;
+    cursor: pointer;
+}
+.site-card:active, .site-card:hover {
+    box-shadow: 0 4px 16px rgba(74,144,226,0.15);
+    background: #eaf4ff;
+}
+.status {
+    margin-left: 16px;
+    font-weight: bold;
+    font-size: 1.1em;
+    min-width: 80px;
+    text-align: right;
+}
+.controls {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100vw;
+    background: #f7f7f7;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.07);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    z-index: 100;
+}
+.control-btn {
+    background: #fff;
+    border: 2px solid #4a90e2;
+    color: #4a90e2;
+    font-size: 1rem;
+    padding: 0.7rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+    font-weight: 600;
+    outline: none;
+}
+.control-btn.active, .control-btn:active, .control-btn:hover {
+    background: #eaf4ff;
+    color: #357abd;
+    border-color: #357abd;
+}
+.auto-status {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-left: 1rem;
+}
+@@media (max-width: 600px) {
+    .header {
+        font-size: 1.3rem;
+        padding: 1.2rem 0.5rem 0.7rem 0.5rem;
+    }
+    #pageList {
+        max-width: 98vw;
+    }
+    .site-card {
+        font-size: 1rem;
+        padding: 0.8rem 1rem;
+    }
+    .status {
+        min-width: 60px;
+        font-size: 1em;
+    }
+    .controls {
+        flex-direction: column;
+        gap: 0.7rem;
+        padding: 1rem 0.2rem;
+    }
+    .auto-status {
+        margin-left: 0;
+        margin-top: 0.5rem;
+    }
+}
+
+.dark-mode {
+    background: #121212;
+    color: #e0e0e0;
+}
+.dark-mode .header {
+    background: #1f1f1f;
+}
+.dark-mode .site-card {
+    background: #2c2c2c;
+    color: #e0e0e0;
+}
+.dark-mode .control-btn {
+    background: #3a3a3a;
+    color: #e0e0e0;
+    border-color: #4a90e2;
+}
+.dark-mode .control-btn.active, .dark-mode .control-btn:hover {
+    background: #4a90e2;
+    color: #fff;
+}
+.dark-mode .controls {
+    background: #1f1f1f;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.25);
+}
+</style>
+
+<div class="header">
+    <h1>Website Status Monitor</h1>
+    <p>Site visits: @ViewBag.VisitCount</p>
+</div>
+<div class="instructions">
+    Tap a website to manually refresh its status.<br>
+    Statuses update automatically every 15 seconds.
+</div>
+
+<ul id="pageList" aria-label="Website status list">
+    @if (ViewBag.Pages is List<string> pages && pages != null)
+    {
+        foreach (var site in pages)
+        {
+            <li class="site-card" data-url="@site" tabindex="0" aria-label="Check status for @site">
+                <span>@site</span>
+                <span class="status" aria-live="polite"></span>
+            </li>
+        }
+    }
+</ul>
+
+<div class="controls">
+    <button id="startBtn" class="control-btn active">Continue</button>
+    <button id="stopBtn" class="control-btn">Stop</button>
+    <span id="autoStatus" class="auto-status">Auto-update: <span style="color:green;">Running</span></span>
+    <button id="themeToggle" class="control-btn" aria-label="Toggle dark mode">🌙 Dark Mode</button>
+</div>
+
+<script>
+let intervalId = null;
+let isRunning = true;
+
+function updateAllStatuses() {
+    document.querySelectorAll('#pageList li').forEach(li => updateStatus(li));
+}
+
+function updateStatus(li) {
+    const url = li.getAttribute('data-url');
+    const statusSpan = li.querySelector('.status');
+    statusSpan.innerHTML = '⏳';
+    fetch(`/Home/CheckSiteStatus?url=${encodeURIComponent(url)}`)
+        .then(res => res.json())
+        .then(data => {
+            const elapsed = data.time;
+            if (data.success) {
+                statusSpan.innerHTML = `<span style="color:green;">&#9679;</span> ${elapsed} ms`;
+            } else {
+                statusSpan.innerHTML = `<span style="color:red;">&#9679;</span> ${elapsed} ms`;
+            }
+        });
+}
+
+// Initial update
+updateAllStatuses();
+
+function setAutoStatus(running) {
+    const status = document.getElementById('autoStatus');
+    if (running) {
+        status.innerHTML = 'Auto-update: <span style="color:green;">Running</span>';
+        document.getElementById('startBtn').classList.add('active');
+        document.getElementById('stopBtn').classList.remove('active');
+    } else {
+        status.innerHTML = 'Auto-update: <span style="color:red;">Stopped</span>';
+        document.getElementById('startBtn').classList.remove('active');
+        document.getElementById('stopBtn').classList.add('active');
+    }
+}
+
+// Start auto-update
+function startAutoUpdate() {
+    if (!intervalId) {
+        intervalId = setInterval(updateAllStatuses, 15000);
+        isRunning = true;
+        setAutoStatus(true);
+    }
+}
+
+// Stop auto-update
+function stopAutoUpdate() {
+    if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+        isRunning = false;
+        setAutoStatus(false);
+    }
+}
+
+// Button event listeners
+document.getElementById('startBtn').addEventListener('click', startAutoUpdate);
+document.getElementById('stopBtn').addEventListener('click', stopAutoUpdate);
+
+// Manual refresh on click
+document.querySelectorAll('#pageList li').forEach(li => {
+    li.addEventListener('click', () => updateStatus(li));
+});
+
+// Theme toggle logic
+const themeToggle = document.getElementById('themeToggle');
+function setTheme(dark) {
+    if (dark) {
+        document.body.classList.add('dark-mode');
+        themeToggle.textContent = '☀️ Light Mode';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.body.classList.remove('dark-mode');
+        themeToggle.textContent = '🌙 Dark Mode';
+        localStorage.setItem('theme', 'light');
+    }
+}
+themeToggle.addEventListener('click', () => {
+    setTheme(!document.body.classList.contains('dark-mode'));
+});
+setTheme(localStorage.getItem('theme') === 'dark');
+
+// Start auto-update by default
+startAutoUpdate();
+</script>
